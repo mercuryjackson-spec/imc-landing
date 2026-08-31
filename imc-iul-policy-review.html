@@ -568,7 +568,7 @@ src="https://www.facebook.com/tr?id=2013127936271954&ev=PageView&noscript=1" alt
       <div class="faceoff">
         <div class="side"><span class="f-lbl">His old contract</span><span class="f-num old">5&ndash;8%</span></div>
         <div class="f-arrow">&rarr;</div>
-        <div class="side"><span class="f-lbl">This one</span><span class="f-num new">0%</span></div>
+        <div class="side"><span class="f-lbl">This one</span><span class="f-num new" data-fo data-from="8" data-to="0" data-suffix="%">0%</span></div>
       </div>
       <p class="r-line">Charged 1.5%. Earning 1.5%. Net cost of zero, guaranteed from year six.</p>
     </div>
@@ -580,7 +580,7 @@ src="https://www.facebook.com/tr?id=2013127936271954&ev=PageView&noscript=1" alt
       <div class="faceoff">
         <div class="side"><span class="f-lbl">Money moved</span><span class="f-num old">$380k</span></div>
         <div class="f-arrow">&rarr;</div>
-        <div class="side"><span class="f-lbl">Now protecting</span><span class="f-num new">$671k</span></div>
+        <div class="side"><span class="f-lbl">Now protecting</span><span class="f-num new" data-fo data-from="380" data-to="671" data-prefix="$" data-suffix="k">$671k</span></div>
       </div>
       <p class="r-line">The same money, buying nearly twice the protection.</p>
     </div>
@@ -592,7 +592,7 @@ src="https://www.facebook.com/tr?id=2013127936271954&ev=PageView&noscript=1" alt
       <div class="faceoff">
         <div class="side"><span class="f-lbl">Was paying him</span><span class="f-num old">$0</span></div>
         <div class="f-arrow">&rarr;</div>
-        <div class="side"><span class="f-lbl">Now pays him</span><span class="f-num new">$54,588</span></div>
+        <div class="side"><span class="f-lbl">Now pays him</span><span class="f-num new" data-fo data-from="0" data-to="54588" data-prefix="$" data-comma="1">$54,588</span></div>
       </div>
       <p class="r-line">Every year, beginning in year ten.</p>
     </div>
@@ -842,6 +842,67 @@ src="https://www.facebook.com/tr?id=2013127936271954&ev=PageView&noscript=1" alt
       if(window.fbq) fbq('trackCustom','BookingClick');
     });
   });
+})();
+</script>
+
+<script>
+/* Face-off figures. The rate falls to zero; the other two climb.
+   Markup already holds the final value, so a JS failure shows the truth. */
+(function(){
+  var sec = document.querySelector('.rateoff');
+  if(!sec) return;
+  var els = sec.querySelectorAll('[data-fo]');
+  if(!els.length) return;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var items = [];
+  Array.prototype.forEach.call(els, function(el){
+    el.style.minWidth = el.getBoundingClientRect().width + 'px';
+    items.push({
+      el: el,
+      from: parseFloat(el.getAttribute('data-from')),
+      to: parseFloat(el.getAttribute('data-to')),
+      pre: el.getAttribute('data-prefix') || '',
+      post: el.getAttribute('data-suffix') || '',
+      comma: el.getAttribute('data-comma') === '1'
+    });
+  });
+
+  function render(it, v){
+    var n = Math.round(v);
+    it.el.textContent = it.pre + (it.comma ? n.toLocaleString('en-US') : n) + it.post;
+  }
+
+  if(reduce){ return; }
+  items.forEach(function(it){ render(it, it.from); });
+
+  function run(){
+    var DUR = 1300, STAG = 260, t0 = null;
+    function ease(t){ return t === 1 ? 1 : 1 - Math.pow(2, -10 * t); }
+    function frame(ts){
+      if(t0 === null) t0 = ts;
+      var done = true;
+      items.forEach(function(it, i){
+        var t = (ts - t0 - i * STAG) / DUR;
+        if(t < 0) t = 0;
+        if(t < 1) done = false; else t = 1;
+        render(it, it.from + (it.to - it.from) * ease(t));
+      });
+      if(!done) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  if(!('IntersectionObserver' in window)){
+    items.forEach(function(it){ render(it, it.to); });
+    return;
+  }
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){ run(); io.disconnect(); }
+    });
+  }, {threshold:0.35});
+  io.observe(sec);
 })();
 </script>
 </body>
